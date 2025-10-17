@@ -1,0 +1,16 @@
+services:
+  ansible:
+    build: .
+    container_name: ansible-hw3
+    volumes:
+      - ./playbook:/ansible/playbook
+      - ./sshcp:/root/.ssh-mounted:ro
+    working_dir: /ansible/playbook
+    stdin_open: true
+    tty: true
+    networks:
+      - ansible-network-hw3
+
+networks:
+  ansible-network-hw3:
+    driver: bridge

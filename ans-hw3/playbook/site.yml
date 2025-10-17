@@ -1,0 +1,256 @@
+---
+- name: Install Clickhouse
+  hosts: clickhouse
+  become: yes
+
+  vars:
+    clickhouse_version: "22.3.3.44"
+    clickhouse_packages:
+      - clickhouse-client
+      - clickhouse-server
+      - clickhouse-common-static
+
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Add ClickHouse GPG key
+      ansible.builtin.apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: 8919F6BD2B48D754
+        state: present
+
+    - name: Add ClickHouse repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://packages.clickhouse.com/deb stable main"
+        state: present
+        filename: clickhouse
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install clickhouse packages
+      ansible.builtin.apt:
+        name: "{{ clickhouse_packages }}"
+        state: present
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Start clickhouse service
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: started
+        enabled: yes
+      register: clickhouse_service_started
+
+    - name: Wait for clickhouse-server to start
+      ansible.builtin.pause:
+        seconds: 10
+      when: clickhouse_service_started.changed
+
+    - name: Create database
+      ansible.builtin.command: "clickhouse-client -q 'CREATE DATABASE IF NOT EXISTS logs;'"
+      register: create_db
+      failed_when: create_db.rc != 0 and create_db.rc != 82
+      changed_when: create_db.rc == 0
+
+- name: Install Vector
+  hosts: vector
+  become: yes
+
+  vars:
+    vector_version: "0.50.0"
+    vector_config_dir: /etc/vector
+    vector_user: vector
+
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+        state: present
+        update_cache: yes
+
+    - name: Download vector binary
+      ansible.builtin.get_url:
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-musl.tar.gz"
+        dest: "/tmp/vector-{{ vector_version }}.tar.gz"
+        mode: "0755"
+      timeout: 60
+
+    - name: Extract vector archive
+      ansible.builtin.unarchive:
+        src: "/tmp/vector-{{ vector_version }}.tar.gz"
+        dest: /tmp/
+        remote_src: yes
+      timeout: 60
+
+    - name: Copy vector binary to /usr/local/bin
+      ansible.builtin.copy:
+        src: "/tmp/vector-x86_64-unknown-linux-musl/bin/vector"
+        dest: "/usr/local/bin/vector"
+        remote_src: yes
+        mode: "0755"
+
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: "/tmp/vector-{{ vector_version }}.tar.gz"
+        state: absent
+    - name: Create vector config directory
+      ansible.builtin.file:
+        path: "{{ vector_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create vector configuration
+      ansible.builtin.copy:
+        content: |
+          # Vector configuration for sending logs to ClickHouse
+          [sources.syslog]
+          type = "file"
+          paths = ["/var/log/syslog"]
+
+          [sinks.clickhouse]
+          type = "clickhouse"
+          inputs = ["syslog"]
+          database = "logs"
+          table = "events"
+          host = "{{ hostvars['clickhouse-01']['ansible_host'] }}"
+          port = 9000
+          auth = "default:"
+        dest: "{{ vector_config_dir }}/vector.toml"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart vector
+
+    - name: Create vector systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Vector
+          Documentation=https://vector.dev
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/local/bin/vector --config {{ vector_config_dir }}/vector.toml
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/vector.service
+        mode: "0644"
+      notify: reload systemd
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start vector service
+      ansible.builtin.service:
+        name: vector
+        state: started
+        enabled: yes
+      register: vector_service_started
+
+  handlers:
+    - name: restart vector
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+
+    - name: reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+- name: Install Lighthouse
+  hosts: lighthouse
+  become: yes
+
+  vars:
+    lighthouse_repo: "https://github.com/VKCOM/lighthouse.git"
+    lighthouse_location: "/var/www/lighthouse"
+    nginx_user_name: "www-data"
+
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Remove lighthouse directory if exists
+      ansible.builtin.file:
+        path: "{{ lighthouse_location }}"
+        state: absent
+
+    - name: Clone lighthouse repository
+      ansible.builtin.git:
+        repo: "{{ lighthouse_repo }}"
+        dest: "{{ lighthouse_location }}"
+        version: master
+
+    - name: Change lighthouse directory ownership
+      ansible.builtin.file:
+        path: "{{ lighthouse_location }}"
+        owner: "{{ nginx_user_name }}"
+        group: "{{ nginx_user_name }}"
+        recurse: yes
+
+    - name: Create nginx config for lighthouse
+      ansible.builtin.copy:
+        content: |
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+
+              server_name _;
+
+              root {{ lighthouse_location }};
+
+              location / {
+                  index index.html;
+                  try_files $uri $uri/ =404;
+              }
+
+              location ~ \.html$ {
+                  add_header Cache-Control "max-age=3600, must-revalidate";
+              }
+          }
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart nginx
+
+    - name: Test nginx configuration
+      ansible.builtin.command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Start nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

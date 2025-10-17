@@ -1,0 +1,79 @@
+# --- Ansible ---
+*.retry
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# Ansible facts cache / local vars
+.cache/
+facts/
+tmp/
+ansible_facts_cache/
+__pycache__/
+
+# Secrets
+vault_pass.txt
+*.vault.yml
+secrets.yml
+vars/private.yml
+
+# Roles / Galaxy cache
+roles/*/files/tmp/
+roles/*/files/*.tar.gz
+roles/.cache/
+collections/
+venv/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+env/
+venv/
+.env
+
+# --- Logs and outputs ---
+logs/
+*.log
+output/
+reports/
+dump.sql
+*.gz
+
+# --- Docker ---
+# Build artifacts
+*.pid
+*.sock
+*.pid.lock
+
+# Docker build context (если временные файлы не нужны в образе)
+.docker/
+.dockerignore
+.docker-compose.override.yml
+docker-compose.override.yml
+# Исключаем конкретные override файлы, но оставляем основной compose
+!docker-compose.yml
+!Dockerfile
+
+# --- VSCode / IDE ---
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+
+# --- System / Misc ---
+.DS_Store
+Thumbs.db
+*.tar
+*.zip
+*.7z
+*.bak
+*.old
+
+sshcp/
