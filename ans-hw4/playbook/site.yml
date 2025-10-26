@@ -1,0 +1,29 @@
+---
+- name: Install Clickhouse
+  hosts: clickhouse
+  become: yes
+
+  roles:
+    - role: clickhouse
+      vars:
+        clickhouse_database: "logs"
+
+- name: Install Vector
+  hosts: vector
+  become: yes
+
+  roles:
+    - role: vector
+      vars:
+        vector_clickhouse_host: "{{ hostvars['clickhouse-01']['ansible_host'] }}"
+        vector_clickhouse_database: "logs"
+        vector_clickhouse_table: "events"
+
+- name: Install Lighthouse
+  hosts: lighthouse
+  become: yes
+
+  roles:
+    - role: lighthouse
+      vars:
+        lighthouse_nginx_port: 80
