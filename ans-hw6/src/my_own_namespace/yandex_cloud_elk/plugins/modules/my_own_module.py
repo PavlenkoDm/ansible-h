@@ -60,56 +60,47 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def run_module():
-    # Определяем параметры модуля
     module_args = dict(
         path=dict(type='str', required=True),
         content=dict(type='str', required=True)
     )
 
-    # Словарь с результатами
     result = dict(
         changed=False,
         path='',
         message=''
     )
 
-    # Создаём объект AnsibleModule
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    # Получаем параметры
     path = module.params['path']
     content = module.params['content']
 
-    # Check mode - не вносим изменений, только показываем что будет
     if module.check_mode:
         result['changed'] = True
         result['path'] = path
         result['message'] = 'File would be created (check mode)'
         module.exit_json(**result)
 
-    # Проверяем, существует ли файл с таким содержимым
     import os
     file_exists = os.path.exists(path)
     
     if file_exists:
-        # Читаем текущее содержимое
         try:
             with open(path, 'r') as f:
                 current_content = f.read()
         except Exception as e:
             module.fail_json(msg=f'Failed to read file: {str(e)}', **result)
         
-        # Если содержимое совпадает - ничего не делаем (идемпотентность)
         if current_content == content:
             result['changed'] = False
             result['path'] = path
             result['message'] = 'File already exists with the same content'
             module.exit_json(**result)
     
-    # Создаём или обновляем файл
     try:
         with open(path, 'w') as f:
             f.write(content)

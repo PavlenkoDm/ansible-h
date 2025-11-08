@@ -5,7 +5,7 @@ version: 1.0.0
 readme: README.md
 
 authors:
-  - Dmitry Pavlenko dmpavlenko07@gmail.com # Укажи своё имя и email
+  - Dmitry Pavlenko dmpavlenko07@gmail.com
 
 description: Custom Ansible collection with my_own_module for file creation
 
