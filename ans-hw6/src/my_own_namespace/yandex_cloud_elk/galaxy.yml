@@ -19,7 +19,7 @@ tags:
 
 dependencies: {}
 
-repository: http://github.com/your-username/my_own_collection
-documentation: http://github.com/your-username/my_own_collection
-homepage: http://github.com/your-username/my_own_collection
-issues: http://github.com/your-username/my_own_collection/issues
+repository: https://github.com/PavlenkoDm/ansible-h/ans-hw6/src/my_own_collection
+documentation: https://github.com/PavlenkoDm/ansible-h/ans-hw6/src/my_own_namespace/yandex_cloud_elk/README.md
+homepage: https://github.com/PavlenkoDm/ansible-h/ans-hw6/src/my_own_collection
+issues: https://github.com/PavlenkoDm/ansible-h/ans-hw6/src/my_own_collection/issues

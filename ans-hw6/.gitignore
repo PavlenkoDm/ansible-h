@@ -22,7 +22,6 @@ vars/private.yml
 
 # Roles / Galaxy cache
 roles/*/files/tmp/
-roles/*/files/*.tar.gz
 roles/.cache/
 collections/
 venv/
@@ -44,7 +43,7 @@ logs/
 output/
 reports/
 dump.sql
-*.gz
+
 
 # --- Docker ---
 # Build artifacts
@@ -70,7 +69,7 @@ docker-compose.override.yml
 # --- System / Misc ---
 .DS_Store
 Thumbs.db
-*.tar
+
 *.zip
 *.7z
 *.bak
