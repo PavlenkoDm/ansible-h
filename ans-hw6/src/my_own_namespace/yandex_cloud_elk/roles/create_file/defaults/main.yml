@@ -1,0 +1,9 @@
+#SPDX-License-Identifier: MIT
+---
+# Default path for the file to create
+file_path: /tmp/default_file.txt
+
+# Default content for the file
+file_content: |
+  This is a default content.
+  Created by create_file role.

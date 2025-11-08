@@ -1,0 +1,13 @@
+---
+- name: Test create_file role
+  hosts: localhost
+  gather_facts: false
+
+  roles:
+    - role: my_own_namespace.yandex_cloud_elk.create_file
+      file_path: /tmp/role_created_file.txt
+      file_content: |
+        This file was created using the create_file role.
+        The role uses my_own_module internally.
+        Collection: my_own_namespace.yandex_cloud_elk
+        Date: 2025-11-08

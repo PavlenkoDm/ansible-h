@@ -1,0 +1,18 @@
+---
+- name: Test my_own_module
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create a test file using my_own_module
+      my_own_module:
+        path: /tmp/ansible_test_file.txt
+        content: |
+          This is a test file created by my custom Ansible module.
+          It supports multiple lines!
+          Current date: 2025-11-08
+      register: result
+
+    - name: Show module result
+      debug:
+        var: result

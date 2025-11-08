@@ -1,0 +1,25 @@
+#SPDX-License-Identifier: MIT
+namespace: my_own_namespace
+name: yandex_cloud_elk
+version: 1.0.0
+readme: README.md
+
+authors:
+  - Dmitry Pavlenko dmpavlenko07@gmail.com # Укажи своё имя и email
+
+description: Custom Ansible collection with my_own_module for file creation
+
+license:
+  - GPL-3.0-or-later
+
+tags:
+  - files
+  - custom
+  - module
+
+dependencies: {}
+
+repository: http://github.com/your-username/my_own_collection
+documentation: http://github.com/your-username/my_own_collection
+homepage: http://github.com/your-username/my_own_collection
+issues: http://github.com/your-username/my_own_collection/issues

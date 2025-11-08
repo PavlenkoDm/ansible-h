@@ -1,0 +1,16 @@
+services:
+  ansible:
+    build: .
+    container_name: ansible-hw6
+    volumes:
+      - ./src:/ansible/src
+      - ./sshcp:/root/.ssh-mounted:ro
+    working_dir: /ansible/src
+    stdin_open: true
+    tty: true
+    networks:
+      - ansible-network-hw6
+
+networks:
+  ansible-network-hw6:
+    driver: bridge
